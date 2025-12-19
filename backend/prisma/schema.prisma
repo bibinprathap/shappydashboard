@@ -1,0 +1,382 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum AdminRole {
+  SUPER_ADMIN
+  OPS
+  MARKETING
+  FINANCE
+  TECH
+}
+
+enum CouponStatus {
+  ACTIVE
+  EXPIRED
+  SUPPRESSED
+  SCHEDULED
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+  BUY_X_GET_Y
+}
+
+enum BannerStatus {
+  ACTIVE
+  INACTIVE
+  SCHEDULED
+}
+
+enum ConversionStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  PAID
+}
+
+// ==================== MODELS ====================
+
+model Admin {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  role          AdminRole @default(OPS)
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  auditLogs     AuditLog[]
+  createdCoupons Coupon[] @relation("CouponCreatedBy")
+  updatedCoupons Coupon[] @relation("CouponUpdatedBy")
+
+  @@map("admins")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  phone         String?
+  firstName     String?
+  lastName      String?
+  country       String?
+  deviceId      String?
+  platform      String?   // ios, android, web, extension
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  clicks        Click[]
+  conversions   Conversion[]
+
+  @@map("users")
+}
+
+model Country {
+  id            String    @id @default(cuid())
+  name          String
+  code          String    @unique  // ISO 3166-1 alpha-2 (e.g., AE, SA, US)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  currencies    CountryCurrency[]
+  merchants     Merchant[]
+  coupons       CouponGeoRule[]
+  banners       Banner[]
+
+  @@map("countries")
+}
+
+model Currency {
+  id            String    @id @default(cuid())
+  name          String
+  code          String    @unique  // ISO 4217 (e.g., AED, SAR, USD)
+  symbol        String
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  countries     CountryCurrency[]
+
+  @@map("currencies")
+}
+
+model CountryCurrency {
+  id          String   @id @default(cuid())
+  countryId   String
+  currencyId  String
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  country     Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  currency    Currency @relation(fields: [currencyId], references: [id], onDelete: Cascade)
+
+  @@unique([countryId, currencyId])
+  @@map("country_currencies")
+}
+
+model Category {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  description   String?
+  icon          String?
+  sortOrder     Int       @default(0)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  merchants     MerchantCategory[]
+
+  @@map("categories")
+}
+
+model Merchant {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  description   String?
+  websiteUrl    String
+  logoUrl       String?
+  bannerUrl     String?
+  deepLink      String?
+  affiliateUrl  String?
+  priority      Int       @default(0)  // Higher = more prominent
+  isFeatured    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  countryId     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  country       Country?  @relation(fields: [countryId], references: [id])
+  categories    MerchantCategory[]
+  coupons       Coupon[]
+  clicks        Click[]
+  conversions   Conversion[]
+  deals         Deal[]
+
+  @@map("merchants")
+}
+
+model MerchantCategory {
+  id          String   @id @default(cuid())
+  merchantId  String
+  categoryId  String
+  createdAt   DateTime @default(now())
+
+  merchant    Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, categoryId])
+  @@map("merchant_categories")
+}
+
+model Coupon {
+  id              String       @id @default(cuid())
+  merchantId      String
+  code            String
+  title           String
+  description     String?
+  type            CouponType   @default(PERCENTAGE)
+  discountValue   Float?       // Percentage or fixed amount
+  minPurchase     Float?
+  maxDiscount     Float?
+  status          CouponStatus @default(ACTIVE)
+  isPinned        Boolean      @default(false)
+  isExclusive     Boolean      @default(false)
+  isVerified      Boolean      @default(false)
+  usageCount      Int          @default(0)
+  successCount    Int          @default(0)
+  failureCount    Int          @default(0)
+  startDate       DateTime?
+  endDate         DateTime?
+  createdById     String?
+  updatedById     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  merchant        Merchant     @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  createdBy       Admin?       @relation("CouponCreatedBy", fields: [createdById], references: [id])
+  updatedBy       Admin?       @relation("CouponUpdatedBy", fields: [updatedById], references: [id])
+  geoRules        CouponGeoRule[]
+  clicks          Click[]
+  conversions     Conversion[]
+
+  @@index([merchantId])
+  @@index([status])
+  @@index([isPinned])
+  @@map("coupons")
+}
+
+model CouponGeoRule {
+  id          String   @id @default(cuid())
+  couponId    String
+  countryId   String
+  isIncluded  Boolean  @default(true) // true = include, false = exclude
+  createdAt   DateTime @default(now())
+
+  coupon      Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  country     Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  @@unique([couponId, countryId])
+  @@map("coupon_geo_rules")
+}
+
+model Deal {
+  id            String    @id @default(cuid())
+  merchantId    String
+  title         String
+  description   String?
+  imageUrl      String?
+  linkUrl       String?
+  discountText  String?   // e.g., "Up to 50% off"
+  isFeatured    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  startDate     DateTime?
+  endDate       DateTime?
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  merchant      Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId])
+  @@index([isFeatured])
+  @@map("deals")
+}
+
+model Banner {
+  id            String       @id @default(cuid())
+  title         String
+  description   String?
+  imageUrl      String
+  linkUrl       String?
+  linkType      String?      // internal, external, coupon, merchant
+  linkId        String?      // ID of linked entity
+  status        BannerStatus @default(ACTIVE)
+  platform      String?      // ios, android, web, all
+  countryId     String?
+  sortOrder     Int          @default(0)
+  startDate     DateTime?
+  endDate       DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relations
+  country       Country?     @relation(fields: [countryId], references: [id])
+
+  @@index([status])
+  @@index([platform])
+  @@map("banners")
+}
+
+model Click {
+  id            String    @id @default(cuid())
+  userId        String?
+  merchantId    String
+  couponId      String?
+  source        String?   // app, extension, web
+  platform      String?   // ios, android, chrome, firefox
+  deviceInfo    Json?
+  ipAddress     String?
+  userAgent     String?
+  referrer      String?
+  createdAt     DateTime  @default(now())
+
+  // Relations
+  user          User?     @relation(fields: [userId], references: [id])
+  merchant      Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  coupon        Coupon?   @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
+  @@index([merchantId])
+  @@index([couponId])
+  @@index([createdAt])
+  @@map("clicks")
+}
+
+model Conversion {
+  id              String           @id @default(cuid())
+  userId          String?
+  merchantId      String
+  couponId        String?
+  orderId         String?
+  orderAmount     Float?
+  commission      Float?
+  currency        String?
+  status          ConversionStatus @default(PENDING)
+  source          String?          // app, extension, web
+  platform        String?
+  transactionDate DateTime?
+  confirmedAt     DateTime?
+  paidAt          DateTime?
+  metadata        Json?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relations
+  user            User?            @relation(fields: [userId], references: [id])
+  merchant        Merchant         @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  coupon          Coupon?          @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
+  @@index([merchantId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("conversions")
+}
+
+model ExtensionSettings {
+  id                String   @id @default(cuid())
+  key               String   @unique
+  value             Json
+  description       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("extension_settings")
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  adminId       String?
+  action        String   // CREATE, UPDATE, DELETE
+  entityType    String   // Coupon, Merchant, Banner, etc.
+  entityId      String
+  oldValue      Json?
+  newValue      Json?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  admin         Admin?   @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
