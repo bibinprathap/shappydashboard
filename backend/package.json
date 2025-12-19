@@ -4,6 +4,9 @@
   "description": "Shappy Dashboard GraphQL Backend API",
   "main": "dist/index.js",
   "type": "module",
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
