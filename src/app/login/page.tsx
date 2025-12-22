@@ -1,37 +1,59 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, user, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, loading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError("");
 
-    try {
-      // TODO: Implement actual authentication
-      // For now, simulate a login
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // Redirect to dashboard on success
-      router.push('/dashboard');
-    } catch (err) {
-      setError('Invalid email or password');
-    } finally {
-      setIsLoading(false);
+    const result = await login(email, password);
+
+    if (result.success) {
+      router.push("/dashboard");
+    } else {
+      setError(result.error || "Invalid email or password");
     }
+
+    setIsLoading(false);
   };
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
@@ -46,7 +68,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm dark:bg-red-900/20 dark:text-red-400">
                 {error}
               </div>
             )}
@@ -59,15 +81,11 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <a href="#" className="text-sm text-primary hover:underline">
-                  Forgot password?
-                </a>
-              </div>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -75,6 +93,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
           </CardContent>
@@ -86,7 +105,7 @@ export default function LoginPage() {
                   Signing in...
                 </div>
               ) : (
-                'Sign In'
+                "Sign In"
               )}
             </Button>
           </CardFooter>

@@ -2,15 +2,13 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['localhost'],
-  },
-  async rewrites() {
-    return [
+    remotePatterns: [
       {
-        source: '/api/graphql',
-        destination: process.env.NEXT_PUBLIC_GRAPHQL_URL || 'http://localhost:4000/graphql',
+        protocol: "http",
+        hostname: "localhost",
+        port: "5000",
       },
-    ];
+    ],
   },
 };
 

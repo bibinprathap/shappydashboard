@@ -1,15 +1,13 @@
-'use client';
+"use client";
 
-import { SessionProvider } from 'next-auth/react';
-import { ApolloProvider } from '@apollo/client';
-import { apolloClient } from '@/lib/apollo-client';
+import { ApolloProvider } from "@apollo/client";
+import { apolloClient } from "@/lib/apollo-client";
+import { AuthProvider } from "@/contexts/auth-context";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider>
-      <ApolloProvider client={apolloClient}>
-        {children}
-      </ApolloProvider>
-    </SessionProvider>
+    <ApolloProvider client={apolloClient}>
+      <AuthProvider>{children}</AuthProvider>
+    </ApolloProvider>
   );
 }
