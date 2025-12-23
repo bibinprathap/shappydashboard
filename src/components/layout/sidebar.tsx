@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { permissions } from "@/lib/permissions";
 import {
   LayoutDashboard,
   Users,
@@ -19,19 +20,34 @@ import {
   LogOut,
   ChevronLeft,
   Shield,
+  LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 
-const navigation = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+  permission?: string; // Optional permission required to view this item
+}
+
+const navigation: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Admins", href: "/dashboard/admins", icon: Shield },
-  { name: "Users", href: "/dashboard/users", icon: Users },
-  { name: "Coupons", href: "/dashboard/coupons", icon: Ticket },
+  {
+    name: "Users",
+    href: "/dashboard/users",
+    icon: Users,
+    permission: permissions.USER_VIEW,
+  },
+  {
+    name: "Coupons",
+    href: "/dashboard/coupons",
+    icon: Ticket,
+    permission: permissions.COUPON_VIEW,
+  },
   { name: "Merchants", href: "/dashboard/merchants", icon: Store },
-  { name: "Conversions", href: "/dashboard/conversions", icon: TrendingUp },
-  { name: "Clicks", href: "/dashboard/clicks", icon: MousePointerClick },
-  { name: "Deals", href: "/dashboard/deals", icon: Gift },
   { name: "Banners", href: "/dashboard/banners", icon: Image },
   { name: "Countries & Currencies", href: "/dashboard/reference", icon: Globe },
   { name: "Extension", href: "/dashboard/extension", icon: Puzzle },
@@ -41,7 +57,15 @@ const navigation = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { logout, hasPermission } = useAuth();
+
+  // Filter navigation items based on user permissions
+  const visibleNavigation = navigation.filter((item) => {
+    // If no permission required, always show
+    if (!item.permission) return true;
+    // Otherwise, check if user has the required permission
+    return hasPermission(item.permission);
+  });
 
   return (
     <div
@@ -73,7 +97,7 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-2">
-          {navigation.map((item) => {
+          {visibleNavigation.map((item) => {
             const isActive =
               pathname === item.href || pathname.startsWith(item.href + "/");
             return (
