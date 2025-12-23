@@ -34,7 +34,12 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Admins", href: "/dashboard/admins", icon: Shield },
+  {
+    name: "Staff",
+    href: "/dashboard/staff",
+    icon: Shield,
+    permission: permissions.STAFF_VIEW,
+  },
   {
     name: "Users",
     href: "/dashboard/users",
@@ -47,8 +52,8 @@ const navigation: NavItem[] = [
     icon: Ticket,
     permission: permissions.COUPON_VIEW,
   },
-  { name: "Merchants", href: "/dashboard/merchants", icon: Store },
-  { name: "Banners", href: "/dashboard/banners", icon: Image },
+  { name: "Merchants", href: "/dashboard/merchants", icon: Store, permission: permissions.MERCHANT_VIEW },
+  { name: "Banners", href: "/dashboard/banners", icon: Image, permission: permissions.BANNER_VIEW },
   { name: "Countries & Currencies", href: "/dashboard/reference", icon: Globe },
   { name: "Extension", href: "/dashboard/extension", icon: Puzzle },
   { name: "Audit Log", href: "/dashboard/audit-log", icon: ClipboardList },

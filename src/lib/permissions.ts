@@ -3,20 +3,34 @@
  * @see backend: src/utils/permissions.js
  */
 export const permissions = {
+  // App Users (mobile app users)
   USER_VIEW: "users:view",
-  USER_CREATE: "users:create",
   USER_UPDATE: "users:update",
   USER_DELETE: "users:delete",
 
-  ROLE_VIEW: "roles:view",
-  ROLE_CREATE: "roles:create",
-  ROLE_UPDATE: "roles:update",
-  ROLE_DELETE: "roles:delete",
+  // Staff Users (dashboard users)
+  STAFF_VIEW: "staff:view",
+  STAFF_CREATE: "staff:create",
+  STAFF_UPDATE: "staff:update",
+  STAFF_DELETE: "staff:delete",
 
+  // Coupons
   COUPON_VIEW: "coupons:view",
   COUPON_CREATE: "coupons:create",
   COUPON_UPDATE: "coupons:update",
   COUPON_DELETE: "coupons:delete",
+
+  // Merchants
+  MERCHANT_VIEW: "merchants:view",
+  MERCHANT_CREATE: "merchants:create",
+  MERCHANT_UPDATE: "merchants:update",
+  MERCHANT_DELETE: "merchants:delete",
+
+  // Banners
+  BANNER_VIEW: "banners:view",
+  BANNER_CREATE: "banners:create",
+  BANNER_UPDATE: "banners:update",
+  BANNER_DELETE: "banners:delete",
 } as const;
 
 export type Permission = (typeof permissions)[keyof typeof permissions];

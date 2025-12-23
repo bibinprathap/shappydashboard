@@ -63,7 +63,7 @@ export default function LoginPage() {
             <span className="text-3xl font-bold text-white">S</span>
           </div>
           <CardTitle className="text-2xl">Welcome to Shappy</CardTitle>
-          <CardDescription>Sign in to your admin dashboard</CardDescription>
+          <CardDescription>Sign in to the staff dashboard</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
@@ -77,7 +77,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@shappy.com"
+                placeholder="staff@shappy.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
