@@ -693,152 +693,135 @@ export default function CouponsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {coupons.map(
-                      (coupon: {
-                        id: string;
-                        code: string;
-                        title: string | null;
-                        shop_name: string;
-                        expiry_date: string | null;
-                        is_pinned: boolean;
-                        health_score: number | null;
-                        ranking_weight: number | null;
-                        country_valid_in: string[] | null;
-                        Website: {
-                          website_name: string;
-                          s3_website_logo: string | null;
-                        } | null;
-                      }) => (
-                        <tr
-                          key={coupon.id}
-                          className="border-b last:border-0 hover:bg-muted/50"
-                        >
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
-                                {coupon.code}
-                              </code>
-                              <button
-                                className="text-muted-foreground hover:text-foreground"
-                                onClick={() => copyToClipboard(coupon.code)}
-                              >
-                                <Copy className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 max-w-[300px]">
-                            <span
-                              className="block truncate"
-                              title={coupon.title || "N/A"}
+                    {coupons.map((coupon: CouponData) => (
+                      <tr
+                        key={coupon.id}
+                        className="border-b last:border-0 hover:bg-muted/50"
+                      >
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
+                              {coupon.code}
+                            </code>
+                            <button
+                              className="text-muted-foreground hover:text-foreground"
+                              onClick={() => copyToClipboard(coupon.code)}
                             >
-                              {coupon.title || "N/A"}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              {coupon.Website?.s3_website_logo && (
-                                <img
-                                  src={coupon.Website.s3_website_logo}
-                                  alt={coupon.Website.website_name}
-                                  className="h-6 w-6 rounded object-contain"
-                                />
-                              )}
-                              <span>
-                                {coupon.Website?.website_name ||
-                                  coupon.shop_name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <div className="flex flex-nowrap gap-1">
-                              {coupon.country_valid_in &&
-                              coupon.country_valid_in.length > 0 ? (
-                                coupon.country_valid_in
-                                  .slice(0, 3)
-                                  .map((country: string) => (
-                                    <Badge
-                                      key={country}
-                                      variant="outline"
-                                      className="text-xs"
-                                    >
-                                      {country}
-                                    </Badge>
-                                  ))
-                              ) : (
-                                <span className="text-muted-foreground text-sm">
-                                  All
-                                </span>
-                              )}
-                              {coupon.country_valid_in &&
-                                coupon.country_valid_in.length > 3 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{coupon.country_valid_in.length - 3}
-                                  </Badge>
-                                )}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            {formatDate(coupon.expiry_date)}
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <Badge
-                              className={
-                                isExpired(coupon.expiry_date)
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-green-100 text-green-800"
-                              }
-                            >
-                              {isExpired(coupon.expiry_date)
-                                ? "EXPIRED"
-                                : "ACTIVE"}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-4 text-center whitespace-nowrap">
-                            {coupon.is_pinned ? (
-                              <Pin className="h-5 w-5 text-primary mx-auto" />
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 text-right whitespace-nowrap">
-                            <span className="text-sm">
-                              {coupon.health_score?.toFixed(1) || "0"}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right whitespace-nowrap">
-                            <span className="text-sm">
-                              {coupon.ranking_weight || 0}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1">
-                              <PinButton
-                                couponId={coupon.id}
-                                isPinned={coupon.is_pinned}
-                                onToggle={refetch}
+                              <Copy className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 max-w-[300px]">
+                          <span
+                            className="block truncate"
+                            title={coupon.title || "N/A"}
+                          >
+                            {coupon.title || "N/A"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            {coupon.Website?.s3_website_logo && (
+                              <img
+                                src={coupon.Website.s3_website_logo}
+                                alt={coupon.Website.website_name}
+                                className="h-6 w-6 rounded object-contain"
                               />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(coupon)}
-                                title="Edit coupon"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive"
-                                onClick={() => handleDelete(coupon)}
-                                title="Delete coupon"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    )}
+                            )}
+                            <span>
+                              {coupon.Website?.website_name || coupon.shop_name}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="flex flex-nowrap gap-1">
+                            {coupon.country_valid_in &&
+                            coupon.country_valid_in.length > 0 ? (
+                              coupon.country_valid_in
+                                .slice(0, 3)
+                                .map((country: string) => (
+                                  <Badge
+                                    key={country}
+                                    variant="outline"
+                                    className="text-xs"
+                                  >
+                                    {country}
+                                  </Badge>
+                                ))
+                            ) : (
+                              <span className="text-muted-foreground text-sm">
+                                All
+                              </span>
+                            )}
+                            {coupon.country_valid_in &&
+                              coupon.country_valid_in.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{coupon.country_valid_in.length - 3}
+                                </Badge>
+                              )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          {formatDate(coupon.expiry_date)}
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <Badge
+                            className={
+                              isExpired(coupon.expiry_date)
+                                ? "bg-red-100 text-red-800"
+                                : "bg-green-100 text-green-800"
+                            }
+                          >
+                            {isExpired(coupon.expiry_date)
+                              ? "EXPIRED"
+                              : "ACTIVE"}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4 text-center whitespace-nowrap">
+                          {coupon.is_pinned ? (
+                            <Pin className="h-5 w-5 text-primary mx-auto" />
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <span className="text-sm">
+                            {coupon.health_score?.toFixed(1) || "0"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <span className="text-sm">
+                            {coupon.ranking_weight || 0}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1">
+                            <PinButton
+                              couponId={coupon.id}
+                              isPinned={coupon.is_pinned}
+                              onToggle={refetch}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(coupon)}
+                              title="Edit coupon"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive"
+                              onClick={() => handleDelete(coupon)}
+                              title="Delete coupon"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
