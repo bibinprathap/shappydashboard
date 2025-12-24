@@ -111,6 +111,10 @@ const GET_STAFF_COUPONS = gql`
         is_pinned
         created_at
         updated_at
+        total_attempts
+        success_attempts
+        failed_attempts
+        copied_attempts
       }
     }
   }
@@ -177,6 +181,10 @@ interface CouponData {
   health_score: number | null;
   ranking_weight: number | null;
   country_valid_in: string[] | null;
+  total_attempts: number | null;
+  success_attempts: number | null;
+  failed_attempts: number | null;
+  copied_attempts: number | null;
   Website: {
     id: string;
     website_name: string;
@@ -657,7 +665,7 @@ export default function CouponsPage() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1200px]">
+                <table className="w-full min-w-[1350px]">
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">
@@ -680,6 +688,12 @@ export default function CouponsPage() {
                       </th>
                       <th className="text-center py-3 px-4 font-medium text-muted-foreground">
                         Pinned
+                      </th>
+                      <th
+                        className="text-center py-3 px-4 font-medium text-muted-foreground"
+                        title="Total / Success / Failed / Copied"
+                      >
+                        Attempts
                       </th>
                       <th className="text-right py-3 px-4 font-medium text-muted-foreground">
                         Health
@@ -783,6 +797,28 @@ export default function CouponsPage() {
                           ) : (
                             <span className="text-muted-foreground">-</span>
                           )}
+                        </td>
+                        <td className="py-3 px-4 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-1 text-xs">
+                            <span
+                              title="Total Attempts"
+                              className="font-medium"
+                            >
+                              {coupon.total_attempts || 0}
+                            </span>
+                            <span className="text-muted-foreground">/</span>
+                            <span title="Success" className="text-green-600">
+                              {coupon.success_attempts || 0}
+                            </span>
+                            <span className="text-muted-foreground">/</span>
+                            <span title="Failed" className="text-red-600">
+                              {coupon.failed_attempts || 0}
+                            </span>
+                            <span className="text-muted-foreground">/</span>
+                            <span title="Copied" className="text-blue-600">
+                              {coupon.copied_attempts || 0}
+                            </span>
+                          </div>
                         </td>
                         <td className="py-3 px-4 text-right whitespace-nowrap">
                           <span className="text-sm">
