@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, gql } from "@apollo/client";
+import { useQuery, useMutation, gql } from "@apollo/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +27,9 @@ import {
   Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/auth-context";
+import { permissions } from "@/lib/permissions";
+import { useToast } from "@/hooks/use-toast";
 
 const GET_MERCHANTS = gql`
   query GetMerchants($limit: Int, $offset: Int, $search: String) {
@@ -53,6 +56,46 @@ const GET_MERCHANTS = gql`
   }
 `;
 
+const CREATE_MERCHANT = gql`
+  mutation CreateMerchant($input: CreateMerchantInput!) {
+    createMerchant(input: $input) {
+      id
+      website_name
+      website_domain
+      website_home
+      category_name
+      priority
+      affiliate_link
+      tags
+    }
+  }
+`;
+
+const UPDATE_MERCHANT = gql`
+  mutation UpdateMerchant($id: ID!, $input: UpdateMerchantInput!) {
+    updateMerchant(id: $id, input: $input) {
+      id
+      website_name
+      website_domain
+      website_home
+      category_name
+      priority
+      affiliate_link
+      tags
+    }
+  }
+`;
+
+const DELETE_MERCHANT = gql`
+  mutation DeleteMerchant($id: ID!) {
+    deleteMerchant(id: $id) {
+      success
+      message
+      deletedCouponsCount
+    }
+  }
+`;
+
 const PAGE_SIZE = 12;
 
 // Merchant interface
@@ -74,11 +117,50 @@ interface MerchantData {
   success_count: number | null;
 }
 
+// Create form interface
+interface CreateMerchantForm {
+  website_name: string;
+  website_domain: string;
+  website_home: string;
+  category_name: string;
+  priority: string;
+  affiliate_link: string;
+  tags: string;
+}
+
+const initialFormState: CreateMerchantForm = {
+  website_name: "",
+  website_domain: "",
+  website_home: "",
+  category_name: "",
+  priority: "1",
+  affiliate_link: "",
+  tags: "",
+};
+
 export default function MerchantsPage() {
+  const { hasPermission } = useAuth();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [editingMerchant, setEditingMerchant] = useState<MerchantData | null>(
+    null
+  );
+  const [deletingMerchant, setDeletingMerchant] = useState<MerchantData | null>(
+    null
+  );
+  const [formData, setFormData] =
+    useState<CreateMerchantForm>(initialFormState);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // Check permissions
+  const canCreateMerchant = hasPermission(permissions.MERCHANT_CREATE);
+  const canUpdateMerchant = hasPermission(permissions.MERCHANT_UPDATE);
+  const canDeleteMerchant = hasPermission(permissions.MERCHANT_DELETE);
 
   // Debounce search input
   useEffect(() => {
@@ -97,6 +179,186 @@ export default function MerchantsPage() {
     },
     fetchPolicy: "cache-and-network",
   });
+
+  const [createMerchant, { loading: createLoading }] = useMutation(
+    CREATE_MERCHANT,
+    {
+      onCompleted: (data) => {
+        setIsCreateOpen(false);
+        setFormData(initialFormState);
+        setFormError(null);
+        refetch();
+        toast({
+          title: "Merchant Created",
+          description: `"${data.createMerchant.website_name}" has been added successfully.`
+        });
+      },
+      onError: (err) => {
+        setFormError(err.message);
+        toast({
+          title: "Error",
+          description: err.message,
+          variant: "destructive",
+        });
+      },
+    }
+  );
+
+  const [updateMerchant, { loading: updateLoading }] = useMutation(
+    UPDATE_MERCHANT,
+    {
+      onCompleted: (data) => {
+        setIsEditOpen(false);
+        setEditingMerchant(null);
+        setFormData(initialFormState);
+        setFormError(null);
+        refetch();
+        toast({
+          title: "Merchant Updated",
+          description: `"${data.updateMerchant.website_name}" has been updated successfully.`,
+        });
+      },
+      onError: (err) => {
+        setFormError(err.message);
+        toast({
+          title: "Error",
+          description: err.message,
+          variant: "destructive",
+        });
+      },
+    }
+  );
+
+  const handleInputChange = (
+    field: keyof CreateMerchantForm,
+    value: string
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormError(null);
+  };
+
+  const handleCreateMerchant = async () => {
+    // Validate required field
+    if (!formData.website_name.trim()) {
+      setFormError("Merchant name is required");
+      return;
+    }
+
+    await createMerchant({
+      variables: {
+        input: {
+          website_name: formData.website_name.trim(),
+          website_domain: formData.website_domain.trim() || null,
+          website_home: formData.website_home.trim() || null,
+          category_name: formData.category_name.trim() || null,
+          priority: parseInt(formData.priority) || 1,
+          affiliate_link: formData.affiliate_link.trim() || null,
+          tags: formData.tags.trim() || null,
+        },
+      },
+    });
+  };
+
+  const handleUpdateMerchant = async () => {
+    if (!editingMerchant) return;
+
+    // Validate required field
+    if (!formData.website_name.trim()) {
+      setFormError("Merchant name is required");
+      return;
+    }
+
+    await updateMerchant({
+      variables: {
+        id: editingMerchant.id,
+        input: {
+          website_name: formData.website_name.trim(),
+          website_domain: formData.website_domain.trim() || null,
+          website_home: formData.website_home.trim() || null,
+          category_name: formData.category_name.trim() || null,
+          priority: parseInt(formData.priority) || 1,
+          affiliate_link: formData.affiliate_link.trim() || null,
+          tags: formData.tags.trim() || null,
+        },
+      },
+    });
+  };
+
+  const handleEditClick = (merchant: MerchantData) => {
+    setEditingMerchant(merchant);
+    setFormData({
+      website_name: merchant.website_name || "",
+      website_domain: merchant.website_domain || "",
+      website_home: merchant.website_home || "",
+      category_name: merchant.category_name || "",
+      priority: String(merchant.priority || 1),
+      affiliate_link: merchant.affiliate_link || "",
+      tags: merchant.tags || "",
+    });
+    setFormError(null);
+    setIsEditOpen(true);
+  };
+
+  const [deleteMerchant, { loading: deleteLoading }] = useMutation(
+    DELETE_MERCHANT,
+    {
+      onCompleted: (data) => {
+        setIsDeleteOpen(false);
+        setDeletingMerchant(null);
+        refetch();
+        toast({
+          title: "Merchant Deleted",
+          description: data.deleteMerchant.message,
+        });
+      },
+      onError: (err) => {
+        toast({
+          title: "Error",
+          description: err.message,
+          variant: "destructive",
+        });
+      },
+    }
+  );
+
+  const handleDeleteClick = (merchant: MerchantData) => {
+    setDeletingMerchant(merchant);
+    setIsDeleteOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingMerchant) return;
+
+    await deleteMerchant({
+      variables: {
+        id: deletingMerchant.id,
+      },
+    });
+  };
+
+  const handleDeleteDialogClose = (open: boolean) => {
+    setIsDeleteOpen(open);
+    if (!open) {
+      setDeletingMerchant(null);
+    }
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setIsCreateOpen(open);
+    if (!open) {
+      setFormData(initialFormState);
+      setFormError(null);
+    }
+  };
+
+  const handleEditDialogClose = (open: boolean) => {
+    setIsEditOpen(open);
+    if (!open) {
+      setEditingMerchant(null);
+      setFormData(initialFormState);
+      setFormError(null);
+    }
+  };
 
   const totalCount = data?.getMerchants?.totalCount || 0;
   const merchants = data?.getMerchants?.merchants || [];
@@ -138,56 +400,334 @@ export default function MerchantsPage() {
           <h1 className="text-3xl font-bold">Merchants</h1>
           <p className="text-muted-foreground">Manage merchants and stores</p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Merchant
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Add Merchant</DialogTitle>
-              <DialogDescription>
-                Add a new merchant to the platform
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" placeholder="e.g., Noon" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="domain">Domain</Label>
-                  <Input id="domain" placeholder="e.g., noon.com" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="website">Website URL</Label>
-                <Input id="website" placeholder="https://www.example.com" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="priority">Priority</Label>
-                  <Input id="priority" type="number" placeholder="1-100" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Input id="category" placeholder="e.g., Fashion" />
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={() => setIsCreateOpen(false)}>
+        {canCreateMerchant && (
+          <Dialog open={isCreateOpen} onOpenChange={handleDialogClose}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
                 Add Merchant
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add Merchant</DialogTitle>
+                <DialogDescription>
+                  Add a new merchant to the platform
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                {formError && (
+                  <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+                    {formError}
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name *</Label>
+                    <Input
+                      id="name"
+                      placeholder="e.g., Noon"
+                      value={formData.website_name}
+                      onChange={(e) =>
+                        handleInputChange("website_name", e.target.value)
+                      }
+                      disabled={createLoading}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="domain">Domain</Label>
+                    <Input
+                      id="domain"
+                      placeholder="e.g., noon.com"
+                      value={formData.website_domain}
+                      onChange={(e) =>
+                        handleInputChange("website_domain", e.target.value)
+                      }
+                      disabled={createLoading}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="website">Website URL</Label>
+                  <Input
+                    id="website"
+                    placeholder="https://www.example.com"
+                    value={formData.website_home}
+                    onChange={(e) =>
+                      handleInputChange("website_home", e.target.value)
+                    }
+                    disabled={createLoading}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="priority">Priority</Label>
+                    <Input
+                      id="priority"
+                      type="number"
+                      placeholder="1-100"
+                      min="1"
+                      max="100"
+                      value={formData.priority}
+                      onChange={(e) =>
+                        handleInputChange("priority", e.target.value)
+                      }
+                      disabled={createLoading}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Input
+                      id="category"
+                      placeholder="e.g., Fashion"
+                      value={formData.category_name}
+                      onChange={(e) =>
+                        handleInputChange("category_name", e.target.value)
+                      }
+                      disabled={createLoading}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="affiliate">Affiliate Link</Label>
+                  <Input
+                    id="affiliate"
+                    placeholder="https://affiliate.example.com/..."
+                    value={formData.affiliate_link}
+                    onChange={(e) =>
+                      handleInputChange("affiliate_link", e.target.value)
+                    }
+                    disabled={createLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tags">Tags (comma-separated)</Label>
+                  <Input
+                    id="tags"
+                    placeholder="e.g., electronics, fashion, deals"
+                    value={formData.tags}
+                    onChange={(e) => handleInputChange("tags", e.target.value)}
+                    disabled={createLoading}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => handleDialogClose(false)}
+                  disabled={createLoading}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateMerchant} disabled={createLoading}>
+                  {createLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Add Merchant
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Edit Merchant Dialog */}
+        {canUpdateMerchant && (
+          <Dialog open={isEditOpen} onOpenChange={handleEditDialogClose}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Edit Merchant</DialogTitle>
+                <DialogDescription>Update merchant details</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                {formError && (
+                  <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+                    {formError}
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-name">Name *</Label>
+                    <Input
+                      id="edit-name"
+                      placeholder="e.g., Noon"
+                      value={formData.website_name}
+                      onChange={(e) =>
+                        handleInputChange("website_name", e.target.value)
+                      }
+                      disabled={updateLoading}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-domain">Domain</Label>
+                    <Input
+                      id="edit-domain"
+                      placeholder="e.g., noon.com"
+                      value={formData.website_domain}
+                      onChange={(e) =>
+                        handleInputChange("website_domain", e.target.value)
+                      }
+                      disabled={updateLoading}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-website">Website URL</Label>
+                  <Input
+                    id="edit-website"
+                    placeholder="https://www.example.com"
+                    value={formData.website_home}
+                    onChange={(e) =>
+                      handleInputChange("website_home", e.target.value)
+                    }
+                    disabled={updateLoading}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-priority">Priority</Label>
+                    <Input
+                      id="edit-priority"
+                      type="number"
+                      placeholder="1-100"
+                      min="1"
+                      max="100"
+                      value={formData.priority}
+                      onChange={(e) =>
+                        handleInputChange("priority", e.target.value)
+                      }
+                      disabled={updateLoading}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-category">Category</Label>
+                    <Input
+                      id="edit-category"
+                      placeholder="e.g., Fashion"
+                      value={formData.category_name}
+                      onChange={(e) =>
+                        handleInputChange("category_name", e.target.value)
+                      }
+                      disabled={updateLoading}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-affiliate">Affiliate Link</Label>
+                  <Input
+                    id="edit-affiliate"
+                    placeholder="https://affiliate.example.com/..."
+                    value={formData.affiliate_link}
+                    onChange={(e) =>
+                      handleInputChange("affiliate_link", e.target.value)
+                    }
+                    disabled={updateLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-tags">Tags (comma-separated)</Label>
+                  <Input
+                    id="edit-tags"
+                    placeholder="e.g., electronics, fashion, deals"
+                    value={formData.tags}
+                    onChange={(e) => handleInputChange("tags", e.target.value)}
+                    disabled={updateLoading}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => handleEditDialogClose(false)}
+                  disabled={updateLoading}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateMerchant} disabled={updateLoading}>
+                  {updateLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        {canDeleteMerchant && (
+          <Dialog open={isDeleteOpen} onOpenChange={handleDeleteDialogClose}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-destructive">
+                  Delete Merchant
+                </DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete this merchant?
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                {deletingMerchant && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                      {deletingMerchant.s3_website_logo ? (
+                        <img
+                          src={deletingMerchant.s3_website_logo}
+                          alt={deletingMerchant.website_name}
+                          className="w-10 h-10 rounded-lg object-contain bg-background"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">
+                          {deletingMerchant.website_name[0]}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-semibold">
+                          {deletingMerchant.website_name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {deletingMerchant.website_domain || "No domain"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                      <p className="text-sm text-destructive font-medium">
+                        ⚠️ Warning: This action cannot be undone!
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Deleting this merchant will also permanently delete{" "}
+                        <strong className="text-foreground">
+                          {deletingMerchant.coupons_count || 0} coupon(s)
+                        </strong>{" "}
+                        associated with it, along with all their click
+                        statistics.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => handleDeleteDialogClose(false)}
+                  disabled={deleteLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleConfirmDelete}
+                  disabled={deleteLoading}
+                >
+                  {deleteLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Delete Merchant
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Filters */}
@@ -327,16 +867,25 @@ export default function MerchantsPage() {
                         : "No Affiliate"}
                     </span>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canUpdateMerchant && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditClick(merchant)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {canDeleteMerchant && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive"
+                          onClick={() => handleDeleteClick(merchant)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>

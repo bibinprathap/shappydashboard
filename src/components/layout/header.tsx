@@ -19,9 +19,6 @@ export function Header() {
     <header className="flex items-center justify-end h-16 px-6 border-b bg-card">
       {/* Actions */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon">
-          <Bell className="h-5 w-5" />
-        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
