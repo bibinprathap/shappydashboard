@@ -260,15 +260,22 @@ export default function BannersPage() {
   const [isUploading, setIsUploading] = useState(false);
 
   // Queries
-  const { data, loading, error, refetch } = useQuery(GET_BANNERS, {
-    variables: {
-      limit: pageSize,
-      offset: currentPage * pageSize,
-      search: debouncedSearch || undefined,
-      status: statusFilter !== "all" ? statusFilter : undefined,
-    },
-    fetchPolicy: "network-only",
-  });
+  const { data, loading, error, refetch, networkStatus } = useQuery(
+    GET_BANNERS,
+    {
+      variables: {
+        limit: pageSize,
+        offset: currentPage * pageSize,
+        search: debouncedSearch || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+      },
+      fetchPolicy: "network-only",
+      notifyOnNetworkStatusChange: true,
+    }
+  );
+
+  // NetworkStatus.refetch === 4, so we show loading for both initial load and refetch
+  const isRefetching = networkStatus === 4;
 
   const [searchMerchants, { loading: searchingMerchants }] = useLazyQuery(
     SEARCH_MERCHANTS,
@@ -548,7 +555,7 @@ export default function BannersPage() {
 
   const getImageSrc = (imageContent: string | null | undefined) => {
     if (!imageContent) return undefined;
-    if (imageContent.startsWith("http") || imageContent.startsWith("/")) {
+    if (imageContent.startsWith("http") || imageContent.startsWith("https")) {
       return imageContent;
     }
     if (imageContent.startsWith("data:")) {
@@ -568,9 +575,13 @@ export default function BannersPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleRefresh} disabled={loading}>
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={loading || isRefetching}
+          >
             <RefreshCw
-              className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+              className={`h-4 w-4 mr-2 ${loading || isRefetching ? "animate-spin" : ""}`}
             />
             Refresh
           </Button>
@@ -800,7 +811,11 @@ export default function BannersPage() {
                     <div className="space-y-2">
                       <Label>Cashback %</Label>
                       <Input
-                        placeholder="e.g., 10%"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        placeholder="e.g., 10"
                         value={formData.cashback_percentage}
                         onChange={(e) =>
                           setFormData((prev) => ({

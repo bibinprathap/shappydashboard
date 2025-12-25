@@ -51,8 +51,6 @@ const navigation: NavItem[] = [
   },
   { name: "Merchants", href: "/dashboard/merchants", icon: Store, permission: permissions.MERCHANT_VIEW },
   { name: "Banners", href: "/dashboard/banners", icon: Image, permission: permissions.BANNER_VIEW },
-
-  { name: "Extension", href: "/dashboard/extension", icon: Puzzle },
   { name: "Audit Log", href: "/dashboard/audit-log", icon: ClipboardList },
 ];
 
