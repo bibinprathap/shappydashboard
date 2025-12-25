@@ -25,6 +25,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Upload,
+  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth-context";
@@ -96,6 +98,16 @@ const DELETE_MERCHANT = gql`
   }
 `;
 
+const UPLOAD_FILE = gql`
+  mutation UploadFile($file: Upload!, $folder: String) {
+    uploadFile(file: $file, folder: $folder) {
+      success
+      url
+      key
+    }
+  }
+`;
+
 const PAGE_SIZE = 12;
 
 // Merchant interface
@@ -126,6 +138,7 @@ interface CreateMerchantForm {
   priority: string;
   affiliate_link: string;
   tags: string;
+  s3_website_logo: string;
 }
 
 const initialFormState: CreateMerchantForm = {
@@ -136,6 +149,7 @@ const initialFormState: CreateMerchantForm = {
   priority: "1",
   affiliate_link: "",
   tags: "",
+  s3_website_logo: "",
 };
 
 export default function MerchantsPage() {
@@ -156,6 +170,7 @@ export default function MerchantsPage() {
   const [formData, setFormData] =
     useState<CreateMerchantForm>(initialFormState);
   const [formError, setFormError] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   // Check permissions
   const canCreateMerchant = hasPermission(permissions.MERCHANT_CREATE);
@@ -190,7 +205,7 @@ export default function MerchantsPage() {
         refetch();
         toast({
           title: "Merchant Created",
-          description: `"${data.createMerchant.website_name}" has been added successfully.`
+          description: `"${data.createMerchant.website_name}" has been added successfully.`,
         });
       },
       onError: (err) => {
@@ -229,6 +244,68 @@ export default function MerchantsPage() {
     }
   );
 
+  const [uploadFile] = useMutation(UPLOAD_FILE);
+
+  const handleLogoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload an image file (JPEG, PNG, GIF, or WebP)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Please upload an image smaller than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const { data } = await uploadFile({
+        variables: { file, folder: "merchants/logos" },
+      });
+
+      if (data?.uploadFile?.success) {
+        setFormData((prev) => ({
+          ...prev,
+          s3_website_logo: data.uploadFile.url,
+        }));
+        toast({
+          title: "Logo Uploaded",
+          description: "Logo uploaded successfully",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload logo",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingLogo(false);
+      // Reset file input
+      event.target.value = "";
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setFormData((prev) => ({ ...prev, s3_website_logo: "" }));
+  };
+
   const handleInputChange = (
     field: keyof CreateMerchantForm,
     value: string
@@ -254,6 +331,7 @@ export default function MerchantsPage() {
           priority: parseInt(formData.priority) || 1,
           affiliate_link: formData.affiliate_link.trim() || null,
           tags: formData.tags.trim() || null,
+          s3_website_logo: formData.s3_website_logo || null,
         },
       },
     });
@@ -279,6 +357,7 @@ export default function MerchantsPage() {
           priority: parseInt(formData.priority) || 1,
           affiliate_link: formData.affiliate_link.trim() || null,
           tags: formData.tags.trim() || null,
+          s3_website_logo: formData.s3_website_logo || null,
         },
       },
     });
@@ -294,6 +373,7 @@ export default function MerchantsPage() {
       priority: String(merchant.priority || 1),
       affiliate_link: merchant.affiliate_link || "",
       tags: merchant.tags || "",
+      s3_website_logo: merchant.s3_website_logo || "",
     });
     setFormError(null);
     setIsEditOpen(true);
@@ -408,7 +488,7 @@ export default function MerchantsPage() {
                 Add Merchant
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add Merchant</DialogTitle>
                 <DialogDescription>
@@ -421,6 +501,73 @@ export default function MerchantsPage() {
                     {formError}
                   </div>
                 )}
+                {/* Logo Upload */}
+                <div className="space-y-2">
+                  <Label>Logo</Label>
+                  <div className="flex items-center gap-4">
+                    {formData.s3_website_logo ? (
+                      <div className="relative">
+                        <img
+                          src={formData.s3_website_logo}
+                          alt="Logo preview"
+                          className="w-16 h-16 rounded-lg object-contain bg-muted border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-6 w-6"
+                          onClick={handleRemoveLogo}
+                          disabled={createLoading || uploadingLogo}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 rounded-lg bg-muted border border-dashed flex items-center justify-center text-muted-foreground">
+                        <Upload className="h-6 w-6" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <input
+                        type="file"
+                        id="create-logo-upload"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        className="hidden"
+                        onChange={handleLogoUpload}
+                        disabled={createLoading || uploadingLogo}
+                      />
+                      <label htmlFor="create-logo-upload">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          disabled={createLoading || uploadingLogo}
+                        >
+                          <span className="cursor-pointer">
+                            {uploadingLogo ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Uploading...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="mr-2 h-4 w-4" />
+                                {formData.s3_website_logo
+                                  ? "Change Logo"
+                                  : "Upload Logo"}
+                              </>
+                            )}
+                          </span>
+                        </Button>
+                      </label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        JPEG, PNG, GIF, WebP (max 5MB)
+                      </p>
+                    </div>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Name *</Label>
@@ -533,7 +680,7 @@ export default function MerchantsPage() {
         {/* Edit Merchant Dialog */}
         {canUpdateMerchant && (
           <Dialog open={isEditOpen} onOpenChange={handleEditDialogClose}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Edit Merchant</DialogTitle>
                 <DialogDescription>Update merchant details</DialogDescription>
@@ -544,6 +691,73 @@ export default function MerchantsPage() {
                     {formError}
                   </div>
                 )}
+                {/* Logo Upload */}
+                <div className="space-y-2">
+                  <Label>Logo</Label>
+                  <div className="flex items-center gap-4">
+                    {formData.s3_website_logo ? (
+                      <div className="relative">
+                        <img
+                          src={formData.s3_website_logo}
+                          alt="Logo preview"
+                          className="w-16 h-16 rounded-lg object-contain bg-muted border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-6 w-6"
+                          onClick={handleRemoveLogo}
+                          disabled={updateLoading || uploadingLogo}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 rounded-lg bg-muted border border-dashed flex items-center justify-center text-muted-foreground">
+                        <Upload className="h-6 w-6" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <input
+                        type="file"
+                        id="edit-logo-upload"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        className="hidden"
+                        onChange={handleLogoUpload}
+                        disabled={updateLoading || uploadingLogo}
+                      />
+                      <label htmlFor="edit-logo-upload">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          disabled={updateLoading || uploadingLogo}
+                        >
+                          <span className="cursor-pointer">
+                            {uploadingLogo ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Uploading...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="mr-2 h-4 w-4" />
+                                {formData.s3_website_logo
+                                  ? "Change Logo"
+                                  : "Upload Logo"}
+                              </>
+                            )}
+                          </span>
+                        </Button>
+                      </label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        JPEG, PNG, GIF, WebP (max 5MB)
+                      </p>
+                    </div>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-name">Name *</Label>
