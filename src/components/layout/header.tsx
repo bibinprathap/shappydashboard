@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/auth-context";
+import Link from "next/link";
 
 interface HeaderProps {
   onMobileMenuToggle?: () => void;
@@ -58,7 +59,9 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/profile">Profile</Link>
+            </DropdownMenuItem>
             {/* <DropdownMenuItem>Settings</DropdownMenuItem> */}
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive" onClick={logout}>
