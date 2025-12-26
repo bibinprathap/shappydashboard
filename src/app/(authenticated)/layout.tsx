@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { useAuth } from "@/contexts/auth-context";
@@ -13,6 +14,7 @@ export default function AuthenticatedLayout({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -36,10 +38,13 @@ export default function AuthenticatedLayout({
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto bg-muted/30 p-6">
+      <Sidebar
+        mobileOpen={mobileMenuOpen}
+        onMobileClose={() => setMobileMenuOpen(false)}
+      />
+      <div className="flex flex-col flex-1 overflow-hidden w-full">
+        <Header onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
+        <main className="flex-1 overflow-y-auto bg-muted/30 p-4 md:p-6">
           {children}
         </main>
       </div>

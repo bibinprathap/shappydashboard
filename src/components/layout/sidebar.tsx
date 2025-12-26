@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,8 @@ import {
   LogOut,
   ChevronLeft,
   Shield,
+  Menu,
+  X,
   LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -69,10 +71,22 @@ const navigation: NavItem[] = [
   },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const { logout, hasPermission } = useAuth();
+
+  // Close mobile sidebar when route changes
+  useEffect(() => {
+    if (mobileOpen && onMobileClose) {
+      onMobileClose();
+    }
+  }, [pathname]);
 
   // Filter navigation items based on user permissions
   const visibleNavigation = navigation.filter((item) => {
@@ -82,11 +96,15 @@ export function Sidebar() {
     return hasPermission(item.permission);
   });
 
-  return (
+  const sidebarContent = (
     <div
       className={cn(
-        "flex flex-col h-screen bg-card border-r transition-all duration-300",
-        collapsed ? "w-16" : "w-64"
+        "flex flex-col h-full bg-card border-r transition-all duration-300",
+        // Desktop: normal width behavior
+        "md:h-screen",
+        collapsed ? "md:w-16" : "md:w-64",
+        // Mobile: always full width in the drawer
+        "w-64"
       )}
     >
       {/* Logo */}
@@ -94,10 +112,20 @@ export function Sidebar() {
         {!collapsed && (
           <span className="text-xl font-bold text-primary">Shappy</span>
         )}
+        {/* Mobile close button */}
         <Button
           variant="ghost"
           size="icon"
-          className={cn("ml-auto", collapsed && "mx-auto")}
+          className="md:hidden ml-auto"
+          onClick={onMobileClose}
+        >
+          <X className="h-5 w-5" />
+        </Button>
+        {/* Desktop collapse button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn("hidden md:flex ml-auto", collapsed && "mx-auto")}
           onClick={() => setCollapsed(!collapsed)}
         >
           <ChevronLeft
@@ -125,9 +153,10 @@ export function Sidebar() {
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
+                  onClick={onMobileClose}
                 >
                   <item.icon className="h-5 w-5 flex-shrink-0" />
-                  {!collapsed && <span>{item.name}</span>}
+                  {(!collapsed || mobileOpen) && <span>{item.name}</span>}
                 </Link>
               </li>
             );
@@ -141,14 +170,46 @@ export function Sidebar() {
           variant="ghost"
           className={cn(
             "w-full justify-start gap-3",
-            collapsed && "justify-center px-0"
+            collapsed && !mobileOpen && "justify-center px-0"
           )}
           onClick={logout}
         >
           <LogOut className="h-5 w-5" />
-          {!collapsed && <span>Logout</span>}
+          {(!collapsed || mobileOpen) && <span>Logout</span>}
         </Button>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar - hidden on mobile */}
+      <div className="hidden md:block">{sidebarContent}</div>
+
+      {/* Mobile Sidebar - overlay drawer */}
+      {mobileOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+            onClick={onMobileClose}
+          />
+          {/* Drawer */}
+          <div className="fixed inset-y-0 left-0 z-50 md:hidden animate-in slide-in-from-left duration-300">
+            {sidebarContent}
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+// Export a hamburger menu button component for the header
+export function MobileMenuButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button variant="ghost" size="icon" className="md:hidden" onClick={onClick}>
+      <Menu className="h-5 w-5" />
+      <span className="sr-only">Toggle menu</span>
+    </Button>
   );
 }

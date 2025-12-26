@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, User } from "lucide-react";
+import { Bell, User, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,14 +12,31 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/auth-context";
 
-export function Header() {
+interface HeaderProps {
+  onMobileMenuToggle?: () => void;
+}
+
+export function Header({ onMobileMenuToggle }: HeaderProps) {
   const { user, logout } = useAuth();
 
   return (
-    <header className="flex items-center justify-end h-16 px-6 border-b bg-card">
+    <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b bg-card">
+      {/* Mobile menu button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden"
+        onClick={onMobileMenuToggle}
+      >
+        <Menu className="h-5 w-5" />
+        <span className="sr-only">Toggle menu</span>
+      </Button>
+
+      {/* Spacer for desktop - pushes actions to right */}
+      <div className="hidden md:block" />
+
       {/* Actions */}
       <div className="flex items-center gap-4">
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
