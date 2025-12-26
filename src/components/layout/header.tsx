@@ -59,7 +59,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            {/* <DropdownMenuItem>Settings</DropdownMenuItem> */}
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive" onClick={logout}>
               Logout
