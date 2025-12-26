@@ -31,6 +31,9 @@ export const permissions = {
   BANNER_CREATE: "banners:create",
   BANNER_UPDATE: "banners:update",
   BANNER_DELETE: "banners:delete",
+
+  // Audit Log
+  AUDIT_LOG_VIEW: "audit_log:view",
 } as const;
 
 export type Permission = (typeof permissions)[keyof typeof permissions];

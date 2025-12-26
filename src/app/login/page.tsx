@@ -26,7 +26,7 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (!loading && user) {
-      router.push("/dashboard");
+      router.push("/");
     }
   }, [user, loading, router]);
 
@@ -38,7 +38,7 @@ export default function LoginPage() {
     const result = await login(email, password);
 
     if (result.success) {
-      router.push("/dashboard");
+      router.push("/");
     } else {
       setError(result.error || "Invalid email or password");
     }

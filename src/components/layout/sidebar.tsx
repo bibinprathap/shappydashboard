@@ -30,28 +30,43 @@ interface NavItem {
 }
 
 const navigation: NavItem[] = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/", icon: LayoutDashboard },
   {
     name: "Staff",
-    href: "/dashboard/staff",
+    href: "/staff",
     icon: Shield,
     permission: permissions.STAFF_VIEW,
   },
   {
     name: "Users",
-    href: "/dashboard/users",
+    href: "/users",
     icon: Users,
     permission: permissions.USER_VIEW,
   },
   {
     name: "Coupons",
-    href: "/dashboard/coupons",
+    href: "/coupons",
     icon: Ticket,
     permission: permissions.COUPON_VIEW,
   },
-  { name: "Merchants", href: "/dashboard/merchants", icon: Store, permission: permissions.MERCHANT_VIEW },
-  { name: "Banners", href: "/dashboard/banners", icon: Image, permission: permissions.BANNER_VIEW },
-  { name: "Audit Log", href: "/dashboard/audit-log", icon: ClipboardList },
+  {
+    name: "Merchants",
+    href: "/merchants",
+    icon: Store,
+    permission: permissions.MERCHANT_VIEW,
+  },
+  {
+    name: "Banners",
+    href: "/banners",
+    icon: Image,
+    permission: permissions.BANNER_VIEW,
+  },
+  {
+    name: "Audit Log",
+    href: "/audit-log",
+    icon: ClipboardList,
+    permission: permissions.AUDIT_LOG_VIEW,
+  },
 ];
 
 export function Sidebar() {
