@@ -34,6 +34,12 @@ export const permissions = {
 
   // Audit Log
   AUDIT_LOG_VIEW: "audit_log:view",
+
+  // Push Notifications
+  PUSH_NOTIFICATION_VIEW: "push_notification:view",
+  PUSH_NOTIFICATION_CREATE: "push_notification:create",
+  PUSH_NOTIFICATION_UPDATE: "push_notification:update",
+  PUSH_NOTIFICATION_DELETE: "push_notification:delete",
 } as const;
 
 export type Permission = (typeof permissions)[keyof typeof permissions];
