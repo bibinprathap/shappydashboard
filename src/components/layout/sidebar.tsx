@@ -58,6 +58,12 @@ const navigation: NavItem[] = [
     permission: permissions.MERCHANT_VIEW,
   },
   {
+    name: "Push Notifications",
+    href: "/notifications",
+    icon: Globe,
+    permission: permissions.PUSH_NOTIFICATION_VIEW,
+  },
+  {
     name: "Banners",
     href: "/banners",
     icon: Image,
