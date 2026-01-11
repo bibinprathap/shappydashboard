@@ -61,6 +61,7 @@ const UPDATE_COUPON = gql`
       ranking_weight
       is_pinned
       country_valid_in
+      discount
     }
   }
 `;
@@ -84,6 +85,7 @@ const CREATE_COUPON = gql`
       expiry_date
       is_pinned
       country_valid_in
+      discount
     }
   }
 `;
@@ -115,6 +117,7 @@ const GET_STAFF_COUPONS = gql`
         success_attempts
         failed_attempts
         copied_attempts
+        discount
       }
     }
   }
@@ -191,6 +194,7 @@ interface CouponData {
     website_domain: string | null;
     s3_website_logo: string | null;
   } | null;
+  discount: string | null;
 }
 
 export default function CouponsPage() {
@@ -209,6 +213,7 @@ export default function CouponsPage() {
     expiry_date: "",
     country_valid_in: "",
     website_id: "",
+    discount: "",
   });
 
   // Delete state
@@ -223,6 +228,7 @@ export default function CouponsPage() {
     expiry_date: "",
     country_valid_in: "",
     website_id: "",
+    discount: "",
   });
 
   // Merchant Search State
@@ -292,6 +298,7 @@ export default function CouponsPage() {
         expiry_date: "",
         country_valid_in: "",
         website_id: "",
+        discount: "",
       });
       setMerchantSearchQuery("");
       setMerchantResults([]);
@@ -357,6 +364,7 @@ export default function CouponsPage() {
                 .filter(Boolean)
             : null,
           is_pinned: false,
+          discount: createForm.discount || null,
         },
       },
     });
@@ -374,6 +382,7 @@ export default function CouponsPage() {
         : "",
       country_valid_in: coupon.country_valid_in?.join(", ") || "",
       website_id: coupon.website_id.toString(),
+      discount: coupon.discount || "",
     });
     setIsEditOpen(true);
   };
@@ -399,6 +408,7 @@ export default function CouponsPage() {
                 .map((c) => c.trim())
                 .filter(Boolean)
             : null,
+          discount: editForm.discount || null,
         },
       },
     });
@@ -590,6 +600,22 @@ export default function CouponsPage() {
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-discount">Discount (%)</Label>
+                <Input
+                  id="create-discount"
+                  placeholder="e.g., 20"
+                  value={createForm.discount}
+                  onChange={(e) => {
+                    // Only allow digits
+                    const value = e.target.value.replace(/[^0-9]/g, "");
+                    setCreateForm({
+                      ...createForm,
+                      discount: value,
+                    });
+                  }}
+                />
+              </div>
               <div className="text-sm text-muted-foreground">
                 * Note: Health Score and Rank Weight will be auto-calculated by
                 the system.
@@ -675,6 +701,9 @@ export default function CouponsPage() {
                         Title
                       </th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                        Discount
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                         Merchant
                       </th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">
@@ -731,6 +760,11 @@ export default function CouponsPage() {
                             title={coupon.title || "N/A"}
                           >
                             {coupon.title || "N/A"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="text-sm">
+                            {coupon.discount || "-"}
                           </span>
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
@@ -1028,6 +1062,22 @@ export default function CouponsPage() {
                   setEditForm({ ...editForm, country_valid_in: e.target.value })
                 }
                 placeholder="AE, SA, KW (comma separated)"
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-discount" className="text-right">
+                Discount
+              </Label>
+              <Input
+                id="edit-discount"
+                value={editForm.discount}
+                onChange={(e) => {
+                  // Only allow digits
+                  const value = e.target.value.replace(/[^0-9]/g, "");
+                  setEditForm({ ...editForm, discount: value });
+                }}
+                placeholder="e.g., 20"
                 className="col-span-3"
               />
             </div>
