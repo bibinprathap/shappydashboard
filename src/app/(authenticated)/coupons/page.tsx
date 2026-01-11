@@ -349,6 +349,17 @@ export default function CouponsPage() {
   const handleCreateSubmit = () => {
     if (!createForm.code || !createForm.website_id) return;
 
+    // Validate single country
+    const country = createForm.country_valid_in?.trim().toUpperCase();
+    if (!country) {
+      alert("Country is required");
+      return;
+    }
+    if (country.includes(",")) {
+      alert("Please enter only a single country code");
+      return;
+    }
+
     createCoupon({
       variables: {
         input: {
@@ -357,12 +368,7 @@ export default function CouponsPage() {
           title: createForm.title || null,
           expiry_date: createForm.expiry_date || null,
           website_id: parseInt(createForm.website_id),
-          country_valid_in: createForm.country_valid_in
-            ? createForm.country_valid_in
-                .split(",")
-                .map((c) => c.trim())
-                .filter(Boolean)
-            : null,
+          country_valid_in: country ? [country] : null,
           is_pinned: false,
           discount: createForm.discount || null,
         },
@@ -380,7 +386,7 @@ export default function CouponsPage() {
       expiry_date: coupon.expiry_date
         ? new Date(coupon.expiry_date).toISOString().split("T")[0]
         : "",
-      country_valid_in: coupon.country_valid_in?.join(", ") || "",
+      country_valid_in: coupon.country_valid_in?.[0] || "", // Only take first country
       website_id: coupon.website_id.toString(),
       discount: coupon.discount || "",
     });
@@ -390,6 +396,17 @@ export default function CouponsPage() {
   // Handle edit submit
   const handleEditSubmit = () => {
     if (!couponToEdit) return;
+
+    // Validate single country
+    const country = editForm.country_valid_in?.trim().toUpperCase();
+    if (!country) {
+      alert("Country is required");
+      return;
+    }
+    if (country.includes(",")) {
+      alert("Please enter only a single country code");
+      return;
+    }
 
     updateCoupon({
       variables: {
@@ -402,12 +419,7 @@ export default function CouponsPage() {
           website_id: editForm.website_id
             ? parseInt(editForm.website_id)
             : parseInt(couponToEdit.website_id.toString()),
-          country_valid_in: editForm.country_valid_in
-            ? editForm.country_valid_in
-                .split(",")
-                .map((c) => c.trim())
-                .filter(Boolean)
-            : null,
+          country_valid_in: country ? [country] : null,
           discount: editForm.discount || null,
         },
       },
@@ -586,18 +598,26 @@ export default function CouponsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="create-countries">Countries</Label>
+                  <Label htmlFor="create-countries">Country *</Label>
                   <Input
                     id="create-countries"
-                    placeholder="AE, SA, KW (comma separated)"
+                    placeholder="e.g., AE"
                     value={createForm.country_valid_in}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      // Remove commas and spaces, only allow single country code
+                      const value = e.target.value
+                        .replace(/[,\s]/g, "")
+                        .toUpperCase();
                       setCreateForm({
                         ...createForm,
-                        country_valid_in: e.target.value,
-                      })
-                    }
+                        country_valid_in: value,
+                      });
+                    }}
+                    maxLength={2}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Single country code only (e.g., AE, SA, KW)
+                  </p>
                 </div>
               </div>
               <div className="space-y-2">
@@ -632,7 +652,10 @@ export default function CouponsPage() {
               <Button
                 onClick={handleCreateSubmit}
                 disabled={
-                  isCreating || !createForm.code || !createForm.shop_name
+                  isCreating ||
+                  !createForm.code ||
+                  !createForm.shop_name ||
+                  !createForm.country_valid_in
                 }
               >
                 {isCreating ? (
@@ -1053,17 +1076,26 @@ export default function CouponsPage() {
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-countries" className="text-right">
-                Countries
+                Country *
               </Label>
-              <Input
-                id="edit-countries"
-                value={editForm.country_valid_in}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, country_valid_in: e.target.value })
-                }
-                placeholder="AE, SA, KW (comma separated)"
-                className="col-span-3"
-              />
+              <div className="col-span-3">
+                <Input
+                  id="edit-countries"
+                  value={editForm.country_valid_in}
+                  onChange={(e) => {
+                    // Remove commas and spaces, only allow single country code
+                    const value = e.target.value
+                      .replace(/[,\s]/g, "")
+                      .toUpperCase();
+                    setEditForm({ ...editForm, country_valid_in: value });
+                  }}
+                  placeholder="e.g., AE"
+                  maxLength={2}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Single country code only (e.g., AE, SA, KW)
+                </p>
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-discount" className="text-right">
@@ -1090,7 +1122,10 @@ export default function CouponsPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleEditSubmit} disabled={isUpdating}>
+            <Button
+              onClick={handleEditSubmit}
+              disabled={isUpdating || !editForm.country_valid_in}
+            >
               {isUpdating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
