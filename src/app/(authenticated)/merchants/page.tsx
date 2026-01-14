@@ -608,17 +608,19 @@ export default function MerchantsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="priority">Priority</Label>
+                    <Label htmlFor="priority">Priority (1-10)</Label>
                     <Input
                       id="priority"
                       type="number"
-                      placeholder="1-100"
+                      placeholder="1-10"
                       min="1"
-                      max="100"
+                      max="10"
                       value={formData.priority}
-                      onChange={(e) =>
-                        handleInputChange("priority", e.target.value)
-                      }
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 1;
+                        const clamped = Math.min(Math.max(val, 1), 10);
+                        handleInputChange("priority", String(clamped));
+                      }}
                       disabled={createLoading}
                     />
                   </div>
@@ -798,17 +800,19 @@ export default function MerchantsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-priority">Priority</Label>
+                    <Label htmlFor="edit-priority">Priority (1-10)</Label>
                     <Input
                       id="edit-priority"
                       type="number"
-                      placeholder="1-100"
+                      placeholder="1-10"
                       min="1"
-                      max="100"
+                      max="10"
                       value={formData.priority}
-                      onChange={(e) =>
-                        handleInputChange("priority", e.target.value)
-                      }
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 1;
+                        const clamped = Math.min(Math.max(val, 1), 10);
+                        handleInputChange("priority", String(clamped));
+                      }}
                       disabled={updateLoading}
                     />
                   </div>
