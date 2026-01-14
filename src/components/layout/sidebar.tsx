@@ -20,6 +20,7 @@ import {
   Menu,
   X,
   LucideIcon,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
@@ -74,6 +75,12 @@ const navigation: NavItem[] = [
     href: "/audit-log",
     icon: ClipboardList,
     permission: permissions.AUDIT_LOG_VIEW,
+  },
+  {
+    name: "Coupon Reports",
+    href: "/coupon-reports",
+    icon: AlertTriangle,
+    permission: permissions.COUPON_REPORT_VIEW,
   },
 ];
 

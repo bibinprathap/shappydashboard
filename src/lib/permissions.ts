@@ -40,6 +40,10 @@ export const permissions = {
   PUSH_NOTIFICATION_CREATE: "push_notification:create",
   PUSH_NOTIFICATION_UPDATE: "push_notification:update",
   PUSH_NOTIFICATION_DELETE: "push_notification:delete",
+
+  // Coupon Reports
+  COUPON_REPORT_VIEW: "coupon_report:view",
+  COUPON_REPORT_DELETE: "coupon_report:delete",
 } as const;
 
 export type Permission = (typeof permissions)[keyof typeof permissions];
